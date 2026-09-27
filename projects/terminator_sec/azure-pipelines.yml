@@ -1,0 +1,430 @@
+# =============================================================================
+# Terminator Sec — Azure Pipelines
+# =============================================================================
+# Branch Strategy:
+#   Feature  : users/abhinav/<feature_name>     → CI only (build + test)
+#   Release  : release/abhinav/<feature_name>   → CI + SIT + auto PR
+#   Protected: main, trsec_sit                  → PR only, no direct push
+#
+# SIT Environment:
+#   Agent    : Microsoft-hosted (windows-latest) — free tier
+#   Cost     : $0 (included in 1,800 free parallel minutes/month)
+# =============================================================================
+
+trigger:
+  branches:
+    include:
+      - users/abhinav/*
+      - release/abhinav/*
+  paths:
+    exclude:
+      - "*.md"
+      - ".gitignore"
+      - "azure-devops-terminator-sec-tasks.csv"
+
+pr:
+  branches:
+    include:
+      - trsec_sit
+      - main
+  paths:
+    exclude:
+      - "*.md"
+
+# ---------------------------------------------------------------------------
+# Variables
+# ---------------------------------------------------------------------------
+variables:
+  GO_VERSION: "1.25.0"
+  NODE_VERSION: "20.x"
+  DASHBOARD_DIR: "apps/dashboard"
+  IS_RELEASE: $[startsWith(variables['Build.SourceBranch'], 'refs/heads/release/abhinav/')]
+
+# ---------------------------------------------------------------------------
+# Stages
+# ---------------------------------------------------------------------------
+stages:
+
+  # ===========================================================================
+  # STAGE 1 — CI: Build & Test (all branches)
+  # ===========================================================================
+  - stage: CI
+    displayName: "CI — Build & Test"
+    jobs:
+
+      # -----------------------------------------------------------------------
+      # JOB 1: Go Backend — Vet, Test, Benchmark, Cross-Platform Build
+      # -----------------------------------------------------------------------
+      - job: Go_Build_Test
+        displayName: "Go — Build & Test"
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+
+          - checkout: self
+            fetchDepth: 0
+
+          - task: GoTool@0
+            displayName: "Install Go $(GO_VERSION)"
+            inputs:
+              version: "$(GO_VERSION)"
+
+          - script: go mod download
+            displayName: "Download dependencies"
+
+          - script: go vet ./...
+            displayName: "go vet"
+
+          - script: go test -v -race -count=1 -timeout 120s ./pkg/...
+            displayName: "go test -race"
+
+          - script: go test -bench=. -benchtime=3s -run='^$' ./pkg/engine/...
+            displayName: "Benchmarks — threat engine latency"
+
+          - script: |
+              mkdir -p $(Build.ArtifactStagingDirectory)/bin/linux
+              mkdir -p $(Build.ArtifactStagingDirectory)/bin/darwin-arm64
+              mkdir -p $(Build.ArtifactStagingDirectory)/bin/windows
+
+              GOOS=linux   GOARCH=amd64 go build -ldflags="-s -w" -o $(Build.ArtifactStagingDirectory)/bin/linux/terminator-agent   ./cmd/terminator-agent
+              GOOS=linux   GOARCH=amd64 go build -ldflags="-s -w" -o $(Build.ArtifactStagingDirectory)/bin/linux/terminator-cli     ./cmd/terminator-cli
+              GOOS=linux   GOARCH=amd64 go build -ldflags="-s -w" -o $(Build.ArtifactStagingDirectory)/bin/linux/terminator-server  ./cmd/terminator-server
+
+              GOOS=darwin  GOARCH=arm64 go build -ldflags="-s -w" -o $(Build.ArtifactStagingDirectory)/bin/darwin-arm64/terminator-agent   ./cmd/terminator-agent
+              GOOS=darwin  GOARCH=arm64 go build -ldflags="-s -w" -o $(Build.ArtifactStagingDirectory)/bin/darwin-arm64/terminator-cli     ./cmd/terminator-cli
+              GOOS=darwin  GOARCH=arm64 go build -ldflags="-s -w" -o $(Build.ArtifactStagingDirectory)/bin/darwin-arm64/terminator-server  ./cmd/terminator-server
+
+              GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o $(Build.ArtifactStagingDirectory)/bin/windows/terminator-agent.exe   ./cmd/terminator-agent
+              GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o $(Build.ArtifactStagingDirectory)/bin/windows/terminator-cli.exe     ./cmd/terminator-cli
+              GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o $(Build.ArtifactStagingDirectory)/bin/windows/terminator-server.exe  ./cmd/terminator-server
+            displayName: "Cross-platform build (Linux / macOS arm64 / Windows)"
+
+          - task: PublishPipelineArtifact@1
+            displayName: "Publish binaries"
+            inputs:
+              targetPath: "$(Build.ArtifactStagingDirectory)/bin"
+              artifact: "binaries-$(Build.BuildId)"
+
+      # -----------------------------------------------------------------------
+      # JOB 2: React Dashboard Build (parallel)
+      # -----------------------------------------------------------------------
+      - job: Dashboard_Build
+        displayName: "Dashboard — Vite Build"
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+
+          - checkout: self
+
+          - task: NodeTool@0
+            displayName: "Install Node.js $(NODE_VERSION)"
+            inputs:
+              versionSpec: "$(NODE_VERSION)"
+
+          - script: cd $(DASHBOARD_DIR) && npm ci
+            displayName: "npm ci"
+
+          - script: cd $(DASHBOARD_DIR) && npm run build
+            displayName: "Vite production build"
+
+          - task: PublishPipelineArtifact@1
+            displayName: "Publish dashboard dist"
+            inputs:
+              targetPath: "$(DASHBOARD_DIR)/dist"
+              artifact: "dashboard-$(Build.BuildId)"
+
+  # ===========================================================================
+  # STAGE 2 — Await Manual Approval before SIT deployment
+  # Pauses pipeline and notifies the approver. Pipeline resumes only after
+  # explicit approval in Azure Pipelines UI (Pipelines → Run → Review).
+  # ===========================================================================
+  - stage: Await_Approval
+    displayName: "Gate — Awaiting SIT Approval"
+    dependsOn: CI
+    condition: |
+      and(
+        succeeded(),
+        startsWith(variables['Build.SourceBranch'], 'refs/heads/release/abhinav/')
+      )
+    jobs:
+
+      - job: Approval_Gate
+        displayName: "Manual Approval Required Before SIT"
+        pool: server                          # runs on ADO server, no agent needed
+        timeoutInMinutes: 1440               # wait up to 24 hours for approval
+        steps:
+
+          - task: ManualValidation@1
+            displayName: "Approve SIT Deployment"
+            inputs:
+              notifyUsers: |
+                abhinavd011@DFORGEAI
+              instructions: |
+                ## SIT Deployment Approval Required
+
+                **Branch**: $(Build.SourceBranchName)
+                **Build**: #$(Build.BuildId)
+                **Commit**: $(Build.SourceVersion)
+
+                CI has passed. Please review and approve to proceed with:
+                - Deploying binaries to the SIT Windows agent
+                - Running 5 smoke tests against terminator-server
+                - Auto-creating PR to trsec_sit on success
+
+                **Approve** to continue or **Reject** to abort.
+              onTimeout: reject              # auto-reject if no response in 24h
+
+  # ===========================================================================
+  # STAGE 3 — SIT: Deploy + Smoke Test (after manual approval)
+  # Microsoft-hosted Windows agent (free tier)
+  # ===========================================================================
+  - stage: SIT
+    displayName: "SIT — Deploy & Smoke Test (windows-latest)"
+    dependsOn: Await_Approval
+    condition: |
+      and(
+        succeeded(),
+        startsWith(variables['Build.SourceBranch'], 'refs/heads/release/abhinav/')
+      )
+    jobs:
+
+      - job: SIT_Deploy_Test
+        displayName: "Deploy + Smoke Test on Windows"
+        pool:
+          vmImage: windows-latest         # Microsoft-hosted, free
+        timeoutInMinutes: 20
+
+        steps:
+
+          # ── Download artifacts ────────────────────────────────────────────
+          - task: DownloadPipelineArtifact@2
+            displayName: "Download Windows binaries"
+            inputs:
+              artifact: "binaries-$(Build.BuildId)"
+              path: "$(Pipeline.Workspace)\\bin"
+
+          - task: DownloadPipelineArtifact@2
+            displayName: "Download dashboard dist"
+            inputs:
+              artifact: "dashboard-$(Build.BuildId)"
+              path: "$(Pipeline.Workspace)\\dashboard"
+
+          # ── Deploy to local SIT dir ───────────────────────────────────────
+          - task: PowerShell@2
+            displayName: "Deploy to C:\\TerminatorSIT"
+            inputs:
+              targetType: inline
+              script: |
+                $sit = "C:\TerminatorSIT"
+                New-Item -ItemType Directory -Force -Path $sit | Out-Null
+                New-Item -ItemType Directory -Force -Path "$sit\dashboard" | Out-Null
+
+                Copy-Item "$(Pipeline.Workspace)\bin\windows\terminator-agent.exe"  "$sit\" -Force
+                Copy-Item "$(Pipeline.Workspace)\bin\windows\terminator-cli.exe"    "$sit\" -Force
+                Copy-Item "$(Pipeline.Workspace)\bin\windows\terminator-server.exe" "$sit\" -Force
+                Copy-Item "$(Pipeline.Workspace)\dashboard\*" "$sit\dashboard\" -Recurse -Force
+
+                "Build=$(Build.BuildId) Branch=$(Build.SourceBranchName) Commit=$(Build.SourceVersion)" |
+                  Set-Content "$sit\BUILD_INFO.txt"
+
+                Write-Host "==> Deployed:" && Get-ChildItem $sit
+
+          # ── Start terminator-server ───────────────────────────────────────
+          - task: PowerShell@2
+            displayName: "Start terminator-server on :8080"
+            inputs:
+              targetType: inline
+              script: |
+                $exe = "C:\TerminatorSIT\terminator-server.exe"
+                Start-Process -FilePath $exe -ArgumentList "-port 8080" -WindowStyle Hidden
+                Start-Sleep -Seconds 4
+
+                $conn = Test-NetConnection -ComputerName localhost -Port 8080 -WarningAction SilentlyContinue
+                if (-not $conn.TcpTestSucceeded) {
+                  Write-Error "terminator-server failed to bind port 8080"
+                  exit 1
+                }
+                Write-Host "==> terminator-server is UP on port 8080"
+
+          # ── Smoke Test 1: /api/status ─────────────────────────────────────
+          - task: PowerShell@2
+            displayName: "Test 1 — /api/status"
+            inputs:
+              targetType: inline
+              script: |
+                $r = Invoke-RestMethod http://localhost:8080/api/status
+                Write-Host "version=$($r.agent_version)  platform=$($r.platform)"
+                if (-not $r.agent_version) { Write-Error "FAIL: no agent_version"; exit 1 }
+                Write-Host "==> PASS"
+
+          # ── Smoke Test 2: CLI ALLOW ───────────────────────────────────────
+          - task: PowerShell@2
+            displayName: "Test 2 — CLI google.com → ALLOW"
+            inputs:
+              targetType: inline
+              script: |
+                $out = & "C:\TerminatorSIT\terminator-cli.exe" test-domain google.com 2>&1
+                Write-Host $out
+                if ($out -notmatch "ALLOW") { Write-Error "FAIL: expected ALLOW"; exit 1 }
+                Write-Host "==> PASS"
+
+          # ── Smoke Test 3: CLI AUTO_BLOCK ──────────────────────────────────
+          - task: PowerShell@2
+            displayName: "Test 3 — CLI emotet-c2.net → AUTO_BLOCK"
+            inputs:
+              targetType: inline
+              script: |
+                $out = & "C:\TerminatorSIT\terminator-cli.exe" test-domain emotet-c2.net 2>&1
+                Write-Host $out
+                if ($out -notmatch "AUTO_BLOCK") { Write-Error "FAIL: expected AUTO_BLOCK"; exit 1 }
+                Write-Host "==> PASS"
+
+          # ── Smoke Test 4: Simulator latency < 10ms ───────────────────────
+          - task: PowerShell@2
+            displayName: "Test 4 — Threat simulator latency < 10ms"
+            inputs:
+              targetType: inline
+              script: |
+                $body = '{"target":"xk9qz7w4lm2p0a.xyz","threat_type":"dga"}'
+                $r = Invoke-RestMethod http://localhost:8080/api/threats/simulate `
+                     -Method POST -ContentType "application/json" -Body $body
+                Write-Host "action=$($r.verdict.action)  severity=$($r.verdict.severity)  latency=$($r.latency_ms)ms"
+                if ($r.verdict.severity -lt 4) { Write-Error "FAIL: severity too low"; exit 1 }
+                if ($r.latency_ms -gt 10)      { Write-Error "FAIL: latency $($r.latency_ms)ms > 10ms budget"; exit 1 }
+                Write-Host "==> PASS"
+
+          # ── Smoke Test 5: /api/fleet ──────────────────────────────────────
+          - task: PowerShell@2
+            displayName: "Test 5 — /api/fleet"
+            inputs:
+              targetType: inline
+              script: |
+                $fleet = Invoke-RestMethod http://localhost:8080/api/fleet
+                Write-Host "fleet_devices=$($fleet.Count)"
+                if ($fleet.Count -lt 1) { Write-Error "FAIL: empty fleet"; exit 1 }
+                Write-Host "==> PASS"
+
+          # ── Summary ───────────────────────────────────────────────────────
+          - task: PowerShell@2
+            displayName: "SIT Summary"
+            condition: always()
+            inputs:
+              targetType: inline
+              script: |
+                Write-Host "##[section]SIT Results — Build $(Build.BuildId)"
+                Write-Host "Branch : $(Build.SourceBranchName)"
+                Write-Host "Commit : $(Build.SourceVersion)"
+                Write-Host "Tests  : /api/status | CLI ALLOW | CLI AUTO_BLOCK | Simulator <10ms | Fleet"
+
+  # ===========================================================================
+  # STAGE 3 — Auto PR: release/abhinav/* → trsec_sit  (after SIT passes)
+  # ===========================================================================
+  - stage: PR_To_SIT
+    displayName: "CD — Auto PR to trsec_sit"
+    dependsOn: SIT
+    condition: |
+      and(
+        succeeded(),
+        startsWith(variables['Build.SourceBranch'], 'refs/heads/release/abhinav/')
+      )
+    jobs:
+
+      - job: Create_PR
+        displayName: "Create PR → trsec_sit"
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+
+          - checkout: self
+            persistCredentials: true
+
+          - script: |
+              BRANCH="$(Build.SourceBranchName)"
+              echo "##vso[task.setvariable variable=RELEASE_BRANCH]$BRANCH"
+            displayName: "Set RELEASE_BRANCH"
+
+          - task: Bash@3
+            displayName: "POST pull request via ADO REST API"
+            env:
+              AZURE_DEVOPS_TOKEN: $(AZURE_DEVOPS_PAT)
+            inputs:
+              targetType: inline
+              script: |
+                set -e
+                BUILD="$(Build.BuildId)"
+                COMMIT="$(Build.SourceVersion)"
+                SHORT="${COMMIT:0:7}"
+
+                TITLE="[SIT ✅] $(RELEASE_BRANCH) → trsec_sit [Build #${BUILD}]"
+                BODY=$(printf '## SIT-Verified PR\n\n| | |\n|---|---|\n| Source | `%s` |\n| Target | `trsec_sit` |\n| Build | #%s |\n| Commit | `%s` |\n\n**SIT Smoke Tests passed:**\n- [x] /api/status\n- [x] CLI ALLOW (google.com)\n- [x] CLI AUTO_BLOCK (emotet-c2.net)\n- [x] Simulator latency < 10ms\n- [x] /api/fleet\n\n**Merge checklist:**\n- [ ] Reviewer sign-off\n- [ ] QA approval' \
+                  "$(RELEASE_BRANCH)" "$BUILD" "$SHORT")
+
+                curl -sf -X POST \
+                  -H "Content-Type: application/json" \
+                  -H "Authorization: Basic $(printf ':%s' "$AZURE_DEVOPS_TOKEN" | base64 -w0)" \
+                  -d "$(jq -n \
+                        --arg t "$TITLE" \
+                        --arg s "refs/heads/$(RELEASE_BRANCH)" \
+                        --arg g "refs/heads/trsec_sit" \
+                        --arg d "$BODY" \
+                        '{title:$t,sourceRefName:$s,targetRefName:$g,description:$d,isDraft:false}')" \
+                  "https://dev.azure.com/DFORGEAI/TRSEC/_apis/git/repositories/TRSEC/pullrequests?api-version=7.1" \
+                && echo "==> PR created." \
+                || echo "==> PR may already exist — skipping."
+
+  # ===========================================================================
+  # STAGE 4 — Package distribution zips
+  # ===========================================================================
+  - stage: Package
+    displayName: "Package — Distribution Archives"
+    dependsOn: PR_To_SIT
+    condition: |
+      and(
+        succeeded(),
+        startsWith(variables['Build.SourceBranch'], 'refs/heads/release/abhinav/')
+      )
+    jobs:
+
+      - job: Package
+        displayName: "Create .zip packages"
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+
+          - task: DownloadPipelineArtifact@2
+            inputs:
+              artifact: "binaries-$(Build.BuildId)"
+              path: "$(Pipeline.Workspace)/bin"
+
+          - task: DownloadPipelineArtifact@2
+            inputs:
+              artifact: "dashboard-$(Build.BuildId)"
+              path: "$(Pipeline.Workspace)/dashboard"
+
+          - script: |
+              OUT="$(Build.ArtifactStagingDirectory)/packages"
+              mkdir -p $OUT
+
+              # macOS arm64
+              cp -r $(Pipeline.Workspace)/bin/darwin-arm64 /tmp/trsec-macos
+              cp -r $(Pipeline.Workspace)/dashboard /tmp/trsec-macos/dashboard
+              zip -qr $OUT/terminator-sec-macos-arm64-$(Build.BuildId).zip /tmp/trsec-macos
+
+              # Windows amd64
+              cp -r $(Pipeline.Workspace)/bin/windows /tmp/trsec-windows
+              cp -r $(Pipeline.Workspace)/dashboard /tmp/trsec-windows/dashboard
+              zip -qr $OUT/terminator-sec-windows-amd64-$(Build.BuildId).zip /tmp/trsec-windows
+
+              # Linux amd64
+              cp -r $(Pipeline.Workspace)/bin/linux /tmp/trsec-linux
+              cp -r $(Pipeline.Workspace)/dashboard /tmp/trsec-linux/dashboard
+              zip -qr $OUT/terminator-sec-linux-amd64-$(Build.BuildId).zip /tmp/trsec-linux
+
+              ls -lh $OUT/
+            displayName: "Zip all platform packages"
+
+          - task: PublishPipelineArtifact@1
+            displayName: "Publish release packages"
+            inputs:
+              targetPath: "$(Build.ArtifactStagingDirectory)/packages"
+              artifact: "release-packages-$(Build.BuildId)"

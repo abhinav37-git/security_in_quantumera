@@ -1,0 +1,26 @@
+# Binaries and packages
+/bin/
+/dist/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Dashboard
+apps/dashboard/node_modules/
+apps/dashboard/dist/
+apps/dashboard/public/dist/
+
+# Go
+vendor/
+
+# Local agent state
+.terminator/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+.env
+.env.*

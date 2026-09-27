@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Velith Systems builds security software for today's exposure and tomorrow's cryptographic transition. Terminator Sec and QuantumShield.">
+  <meta name="theme-color" content="#060708" id="theme-color">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Velith Systems | Security for what comes next">
+  <meta property="og:description" content="Identify today's exposure. Prepare cryptographic systems for the quantum era. Terminator Sec and QuantumShield.">
+  <meta property="og:image" content="/og.svg">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Velith Systems">
+  <meta name="twitter:description" content="Security software for today's threats and the cryptographic transition.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <title>Velith Systems | Security for what comes next</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem('velith-theme');
+        var theme = stored || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    })();
+  </script>
+  <link rel="stylesheet" href="styles.css?v=solid">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="scene-canvas" aria-hidden="true"></canvas>
+  <svg xmlns="http://www.w3.org/2000/svg" class="icon-sprite" aria-hidden="true">
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    </symbol>
+    <symbol id="i-crosshair" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/>
+    </symbol>
+    <symbol id="i-scan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/>
+    </symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="2" y1="14" x2="6" y2="14"/><line x1="10" y1="8" x2="14" y2="8"/><line x1="18" y1="16" x2="22" y2="16"/>
+    </symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+    </symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 14.5A8.5 8.5 0 1 1 9.5 3 7 7 0 0 0 21 14.5z"/>
+    </symbol>
+  </svg>
+  <div class="page-grid-bg" aria-hidden="true"></div>
+  <div class="page-vignette" aria-hidden="true"></div>
+
+  <header class="navbar" id="site-navbar">
+    <div class="container nav-container">
+      <a href="#top" class="logo-group">
+        <div class="logo-badge">
+          <svg width="18" height="18"><use href="#i-shield"/></svg>
+        </div>
+        <span class="brand-text">VELITH</span>
+      </a>
+      <nav class="site-nav" id="site-nav">
+        <ul class="nav-links">
+          <li><a href="#products">Products</a></li>
+          <li><a href="#terminator">Terminator</a></li>
+          <li><a href="#quantumshield">QuantumShield</a></li>
+          <li><a href="#simulators">Graph</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </nav>
+      <div class="nav-actions">
+        <a href="#terminator" class="btn btn-outline nav-ghost">Explore Terminator Sec</a>
+        <a href="#contact" class="btn btn-primary" id="nav-cta-btn">Talk to security team</a>
+        <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch to light mode">
+          <svg class="icon-moon" aria-hidden="true"><use href="#i-moon"/></svg>
+          <svg class="icon-sun" aria-hidden="true"><use href="#i-sun"/></svg>
+        </button>
+        <button type="button" class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="site-nav" aria-label="Open menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="container hero-split reveal">
+        <div class="hero-copy">
+          <p class="hero-kicker mono"><span class="pulse-dot"></span> <span id="hero-decode">Security software organization</span></p>
+          <h1 class="hero-title">Security for what comes next.</h1>
+          <p class="hero-subtitle">Two controls. The decision stays on systems you operate.</p>
+          <div class="hero-buttons">
+            <a href="#terminator" class="btn btn-primary">Explore Terminator Sec</a>
+            <a href="#quantumshield" class="btn btn-outline">Explore QuantumShield</a>
+          </div>
+        </div>
+        <aside class="map-panel" aria-label="Sample security infrastructure">
+          <div class="hero-panel-bar">
+            <span class="mono">sample topology</span>
+            <span class="status-pill" id="map-state">Exposed</span>
+          </div>
+          <svg class="infra-svg" id="infra-map" viewBox="0 0 520 320" role="img">
+            <title>Sample path from an endpoint through DNS control to a protected service</title>
+            <g class="infra-links" fill="none" stroke="currentColor" stroke-width="1.2">
+              <path d="M90 70 H200"/>
+              <path d="M250 70 H360"/>
+              <path d="M90 160 H200"/>
+              <path d="M250 160 H360"/>
+              <path d="M410 86 V144"/>
+              <path d="M140 86 V144"/>
+              <path class="infra-live" id="infra-live" d="M90 250 H200 V160 H410 V70"/>
+            </g>
+            <g class="infra-nodes" font-family="ui-monospace, monospace" font-size="11" text-anchor="middle">
+              <g class="inode" data-node="endpoint"><rect x="40" y="48" width="100" height="44" rx="4"/><text x="90" y="75">Endpoint</text></g>
+              <g class="inode" data-node="api"><rect x="200" y="48" width="100" height="44" rx="4"/><text x="250" y="75">API</text></g>
+              <g class="inode inode--alert" data-node="external"><rect x="360" y="48" width="120" height="44" rx="4"/><text x="420" y="75">External</text></g>
+              <g class="inode" data-node="dns"><rect x="40" y="138" width="100" height="44" rx="4"/><text x="90" y="165">DNS</text></g>
+              <g class="inode inode--term" data-node="terminator"><rect x="200" y="138" width="100" height="44" rx="4"/><text x="250" y="165">Terminator</text></g>
+              <g class="inode inode--qs" data-node="crypto"><rect x="360" y="138" width="120" height="44" rx="4"/><text x="420" y="165">Crypto edge</text></g>
+              <g class="inode" data-node="data"><rect x="40" y="228" width="100" height="44" rx="4"/><text x="90" y="255">Data</text></g>
+              <g class="inode" data-node="users"><rect x="200" y="228" width="100" height="44" rx="4"/><text x="250" y="255">Users</text></g>
+            </g>
+          </svg>
+          <p class="map-caption mono" id="map-caption">External name resolves before the host can score it.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section section-compact" id="products">
+      <div class="container">
+        <div class="section-header section-header--minimal reveal">
+          <span class="section-tag">Platforms</span>
+          <h2 class="section-title">Two products. One posture.</h2>
+        </div>
+        <div class="products-grid">
+          <article class="product-card product-card--compact reveal" id="terminator-card">
+            <div class="product-badge-group">
+              <span class="product-tag">Today</span>
+              <div class="product-icon" aria-hidden="true"><svg><use href="#i-crosshair"/></svg></div>
+            </div>
+            <h3 class="product-title">Terminator Sec</h3>
+            <p class="product-cat mono">Endpoint and DNS control</p>
+            <p class="brief-lead">Block, sinkhole, or prompt before a connection opens.</p>
+            <ol class="scan-steps" id="scan-steps">
+              <li class="is-on">Intercept</li>
+              <li>Score</li>
+              <li>Block</li>
+              <li>Ask</li>
+              <li>Allow</li>
+            </ol>
+            <a href="#terminator" class="btn btn-secure">Open the product</a>
+          </article>
+          <article class="product-card product-card--compact card-quantum reveal reveal-delay-1" id="quantum-card">
+            <div class="product-badge-group">
+              <span class="product-tag tag-quantum">Transition</span>
+              <div class="product-icon" aria-hidden="true"><svg><use href="#i-shield"/></svg></div>
+            </div>
+            <h3 class="product-title">QuantumShield</h3>
+            <p class="product-cat mono">Cryptographic transition</p>
+            <p class="brief-lead">Inventory public-key use, then move to ML-KEM and ML-DSA.</p>
+            <ol class="crypto-steps" id="crypto-steps">
+              <li class="is-on">Inventory</li>
+              <li>RSA and ECC</li>
+              <li>Hybrid TLS</li>
+              <li>ML-DSA</li>
+            </ol>
+            <a href="#quantumshield" class="btn btn-outline">Open the product</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-compact" id="terminator">
+      <div class="container">
+        <div class="intel-section reveal">
+          <span class="section-tag">Terminator Sec</span>
+          <h2 class="section-title section-title--left">See the name before the socket opens.</h2>
+        </div>
+        <div class="pipeline reveal">
+          <div class="pipeline-step"><span class="pipeline-num mono">01</span><h4>Intercept</h4><p>UDP, TCP, and DoH on the host.</p></div>
+          <div class="pipeline-step"><span class="pipeline-num mono">02</span><h4>Score</h4><p>Blocklist, then entropy, then wording.</p></div>
+          <div class="pipeline-step"><span class="pipeline-num mono">03</span><h4>Act</h4><p>Block, ask, or allow. Nothing leaves the device.</p></div>
+        </div>
+        <div class="compare-grid reveal">
+          <div class="compare-col">
+            <h3>On the host</h3>
+            <ul class="intel-list">
+              <li>Trie and bloom blocklists</li>
+              <li>Generated-name check</li>
+              <li>Process and filesystem guard</li>
+              <li>Local fleet policy</li>
+            </ul>
+          </div>
+          <div class="compare-col">
+            <h3>Result</h3>
+            <ul class="intel-list">
+              <li>Known malware never connects</li>
+              <li>Lookalike names ask first</li>
+              <li>No vendor DNS log</li>
+              <li>No SOC queue required</li>
+            </ul>
+          </div>
+        </div>
+        <pre class="term-sample reveal" aria-label="Sample terminator-sec output"><code>$ terminator-sec scan :5353
+[+] trie loaded
+[+] scoring udp/tcp/doh
+12 names observed · 3 blocked · 1 prompt</code></pre>
+        <div class="daemon-spec-card reveal">
+          <div class="daemon-spec-header">
+            <div>
+              <span class="product-tag">Go Core Daemon</span>
+              <h3 class="daemon-spec-title">In-Memory Engine & Interceptor Architecture</h3>
+            </div>
+            <span class="mono daemon-latency">&lt; 0.1ms lookup</span>
+          </div>
+          <p class="brief-lead brief-lead--left">Compiled in Go. Zero heap allocations per lookup cycle. Operates as a local DNS proxy (UDP/TCP/DoH :53) with zero external telemetry.</p>
+          <div class="spec-tiers">
+            <div class="spec-tier">
+              <span class="mono tier-badge">Tier 1</span>
+              <h4>Radix Trie + Bloom Filter</h4>
+              <p>O(k) domain prefix & suffix matching across 500k+ IOC feeds.</p>
+            </div>
+            <div class="spec-tier">
+              <span class="mono tier-badge">Tier 2</span>
+              <h4>Shannon Entropy & Lexical Heuristics</h4>
+              <p>Real-time DGA anomaly scoring without off-device cloud lookups.</p>
+            </div>
+            <div class="spec-tier">
+              <span class="mono tier-badge">Tier 3</span>
+              <h4>Local IPC & eBPF Socket Hooks</h4>
+              <p>Process-level attribution linking outbound queries to caller PIDs.</p>
+            </div>
+          </div>
+        </div>
+        <div class="simulator-container product-sandbox">
+          <div class="sim-header">
+            <span class="sim-caption">Sandbox</span>
+            <span class="status-pill">DNS intercept</span>
+          </div>
+          <div class="sim-body">
+            <div class="sim-tab-panel is-inline" id="panel-terminator">
+              <p class="sandbox-lead">Pick a name. The host blocks, asks, or allows.</p>
+              <ol class="decision-rail" id="dns-rail">
+                <li data-step="intercept">1 · Hear the query</li>
+                <li data-step="score">2 · Score on the host</li>
+                <li data-step="act">3 · Block, ask, or allow</li>
+              </ol>
+              <div class="sandbox-grid">
+                <div class="sandbox-controls">
+                  <div>
+                    <label class="input-label" for="dns-domain-input">Name a program is about to resolve</label>
+                    <input type="text" id="dns-domain-input" class="input-box" placeholder="try a domain, or pick a scenario" value="c2-beacon.darknet-rat.ru" autocomplete="off" spellcheck="false">
+                  </div>
+                  <div>
+                    <label class="input-label">Or start from a scenario</label>
+                    <div class="preset-queries">
+                      <button class="preset-btn dns-preset is-selected" data-domain="c2-beacon.darknet-rat.ru" type="button"><span class="status-dot status-dot--crit"></span>Known malware</button>
+                      <button class="preset-btn dns-preset" data-domain="xkjh298fasd98f723kjhfa987sdf.biz" type="button"><span class="status-dot status-dot--warn"></span>Generated name</button>
+                      <button class="preset-btn dns-preset" data-domain="secure-banking-verify-login.com" type="button"><span class="status-dot status-dot--warn"></span>Lookalike login</button>
+                      <button class="preset-btn dns-preset" data-domain="github.com" type="button"><span class="status-dot status-dot--ok"></span>Ordinary site</button>
+                    </div>
+                    <p class="preset-hint" id="dns-preset-hint">This name is already on a local blocklist.</p>
+                  </div>
+                  <button id="dns-intercept-btn" class="btn btn-primary" type="button">Score this name</button>
+                </div>
+                <div class="sandbox-result">
+                  <div class="verdict" id="dns-verdict" data-state="idle">
+                    <p class="verdict-kicker">Decision</p>
+                    <p class="verdict-title">Score the name to see what the host would do.</p>
+                    <p class="verdict-why">Known malware is blocked. Machine-generated names are blocked. Lookalike login pages ask the person first. Ordinary sites are allowed through.</p>
+                  </div>
+                  <div class="terminal-window">
+                    <div class="terminal-topbar">
+                      <span class="terminal-title">What the agent recorded</span>
+                      <span class="status-pill">On device</span>
+                    </div>
+                    <div class="terminal-content" id="dns-terminal-logs">
+                      <div class="log-entry log-entry--head" aria-hidden="true">
+                        <span>Time</span><span>Action</span><span>Detail</span><span>Latency</span>
+                      </div>
+                      <div class="log-entry">
+                        <span class="log-time">00:00:00</span>
+                        <span class="log-allowed">READY</span>
+                        <span class="log-detail">Listening on the host. Blocklist loaded. Nothing sent off-device.</span>
+                        <span class="log-metric">n/a</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-alt section-compact" id="quantumshield">
+      <div class="container">
+        <div class="intel-section reveal">
+          <span class="section-tag">QuantumShield</span>
+          <h2 class="section-title section-title--left">Start with an inventory. Then move the edge.</h2>
+        </div>
+        <div class="pipeline reveal">
+          <div class="pipeline-step"><span class="pipeline-num mono">01</span><h4>Discover</h4><p>CBOM of RSA, elliptic curves, and SHA-1.</p></div>
+          <div class="pipeline-step"><span class="pipeline-num mono">02</span><h4>Protect</h4><p>Hybrid ML-KEM at the TLS edge.</p></div>
+          <div class="pipeline-step"><span class="pipeline-num mono">03</span><h4>Trust</h4><p>ECDSA and ML-DSA on one certificate.</p></div>
+          <div class="pipeline-step"><span class="pipeline-num mono">04</span><h4>Sign</h4><p>LMS only where a stateful signature fits.</p></div>
+        </div>
+        <ol class="timeline reveal">
+          <li><span class="mono">Today</span><strong>RSA still verifies</strong><p>Recorded ciphertext is the reason to plan now.</p></li>
+          <li><span class="mono">This year</span><strong>Not a cutover</strong><p>Research machines do not retire production RSA.</p></li>
+          <li><span class="mono">Next</span><strong>Hybrid edge</strong><p>Legacy clients stay. PQC clients require ML-KEM.</p></li>
+        </ol>
+        <div class="simulator-container product-sandbox">
+          <div class="sim-header">
+            <span class="sim-caption">Sandbox</span>
+            <span class="status-pill">CBOM inventory</span>
+          </div>
+          <div class="sim-body">
+            <div class="sim-tab-panel is-inline" id="panel-cbom">
+              <p class="sandbox-lead">Build a sample inventory. Each row is one component.</p>
+              <ol class="decision-rail" id="cbom-rail">
+                <li data-step="repos">1 · Repositories</li>
+                <li data-step="images">2 · Images</li>
+                <li data-step="tls">3 · Live TLS</li>
+                <li data-step="write">4 · Inventory</li>
+              </ol>
+              <div class="cbom-toolbar">
+                <div>
+                  <h4 class="cbom-heading">Sample estate</h4>
+                  <p id="cbom-status-label" class="cbom-status">Five components. Not a scan of a real repository.</p>
+                </div>
+                <div class="cbom-actions">
+                  <button id="run-cbom-scan-btn" class="btn btn-secure" type="button">Build the inventory</button>
+                  <button id="export-cbom-btn" class="btn btn-outline" type="button" style="display: none;" title="Download authentic CycloneDX 1.6 Cryptographic BOM">Export CycloneDX JSON</button>
+                </div>
+              </div>
+              <div class="verdict" id="cbom-summary" data-state="idle">
+                <p class="verdict-kicker">What you will see</p>
+                <p class="verdict-title">Public-key systems that need a migration plan, and one edge that is already hybrid.</p>
+                <p class="verdict-why">RSA and elliptic curves are the Shor concern. AES is a key-size note, not the same problem. Research machines do not retire production RSA this year.</p>
+              </div>
+              <div class="cbom-progress-track" aria-hidden="true">
+                <div id="cbom-progress" class="cbom-progress-bar"></div>
+              </div>
+              <div class="cbom-table-container">
+                <table class="cbom-table">
+                  <thead>
+                    <tr>
+                      <th>Where</th>
+                      <th>Algorithm</th>
+                      <th>Used for</th>
+                      <th>What to do</th>
+                      <th>Why</th>
+                    </tr>
+                  </thead>
+                  <tbody id="cbom-results-body">
+                    <tr>
+                      <td colspan="5" class="cbom-empty">Build the inventory to walk the sample estate one component at a time.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-compact" id="operating">
+      <div class="container">
+        <div class="section-header section-header--minimal reveal">
+          <span class="section-tag">Boundary</span>
+          <h2 class="section-title">What stays inside.</h2>
+        </div>
+        <div class="compare-grid reveal">
+          <div class="compare-col">
+            <h3>Kept</h3>
+            <ul class="intel-list">
+              <li>DNS decision</li>
+              <li>Blocklists and process policy</li>
+              <li>Certificate keys</li>
+              <li>SIEM export, on your retention</li>
+            </ul>
+          </div>
+          <div class="compare-col">
+            <h3>Not this</h3>
+            <ul class="intel-list">
+              <li>Managed SOC</li>
+              <li>CVE subscription</li>
+              <li>A date when RSA fails</li>
+              <li>A scan from this website</li>
+            </ul>
+          </div>
+        </div>
+        <ol class="decision-rail reveal" aria-label="Engagement sequence">
+          <li>1 · Place the agent</li>
+          <li>2 · Read the CBOM</li>
+          <li>3 · Hybrid TLS</li>
+          <li>4 · Dual signatures</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section section-alt" id="technology">
+      <div class="container">
+        <div class="section-header section-header--minimal reveal">
+          <span class="section-tag">Sample</span>
+          <h2 class="section-title">A topology you can inspect.</h2>
+        </div>
+        <div class="arch-layout reveal">
+          <div class="arch-graph">
+            <button type="button" class="arch-node is-selected" data-arch="data">Data store</button>
+            <button type="button" class="arch-node" data-arch="api">API</button>
+            <button type="button" class="arch-node" data-arch="web">Web</button>
+            <button type="button" class="arch-node" data-arch="users">Users</button>
+            <button type="button" class="arch-node" data-arch="dns">DNS path</button>
+          </div>
+          <div class="arch-detail" id="arch-detail" aria-live="polite">
+            <h3 id="arch-title">Data store</h3>
+            <dl class="arch-dl" id="arch-dl"></dl>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-compact" id="overview">
+      <div class="container reveal">
+        <span class="section-tag">Sample overview</span>
+        <h2 class="section-title section-title--left">Sample console.</h2>
+        <p class="sim-caption">Illustrative counts. Not a live tenant.</p>
+        <div class="dash" id="dash">
+          <div class="dash-score"><span class="mono">Findings closed</span><strong data-count="87" data-suffix="%">0%</strong></div>
+          <div class="dash-metrics">
+            <div><span class="mono">Assets</span><strong data-count="142">0</strong></div>
+            <div><span class="mono">Open findings</span><strong data-count="8">0</strong></div>
+            <div><span class="mono">Critical</span><strong data-count="2">0</strong></div>
+            <div><span class="mono">PQC readiness</span><strong data-count="61" data-suffix="%">0%</strong></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="simulators">
+      <div class="container">
+        <div class="section-header section-header--minimal reveal">
+          <span class="section-tag">Graph</span>
+          <h2 class="section-title">Both controls, one graph.</h2>
+          <p class="sim-caption">Sample data, in the browser. Nothing on your network is scanned.</p>
+        </div>
+        <div class="simulator-container reveal reveal-delay-1">
+          <div class="sim-body">
+            <div class="sim-tab-panel is-inline" id="panel-graph">
+              <p class="sandbox-lead">Ask a question. The answer is a path through the nodes.</p>
+              <div class="graph-ask">
+                <label class="input-label" for="graph-question">Ask the sample graph</label>
+                <div class="graph-ask-row">
+                  <input type="text" id="graph-question" class="input-box" placeholder="What does Shor threaten?" autocomplete="off" spellcheck="false">
+                  <button type="button" class="btn btn-primary" id="graph-ask-btn">Walk the graph</button>
+                </div>
+                <div class="preset-queries">
+                  <button type="button" class="preset-btn graph-preset" data-question="Why was the last name decided that way?">Last name</button>
+                  <button type="button" class="preset-btn graph-preset" data-question="What does Shor threaten?">What Shor threatens</button>
+                  <button type="button" class="preset-btn graph-preset" data-question="What should we migrate first?">What to migrate</button>
+                  <button type="button" class="preset-btn graph-preset" data-question="What is already hybrid?">Already hybrid</button>
+                </div>
+              </div>
+              <div class="verdict" id="graph-answer" data-state="idle" aria-live="polite">
+                <p class="verdict-kicker">Retrieved path</p>
+                <p class="verdict-title">Click a node, or ask a question.</p>
+                <p class="verdict-why">Score a name or build the inventory first if you want those facts in the graph. RSA and elliptic curves are already here. AES is here as a different kind of note.</p>
+              </div>
+              <div class="graph-stage">
+                <svg id="graph-svg" viewBox="0 0 980 560" role="img" aria-label="Sample knowledge graph"></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-compact" id="services">
+      <div class="container">
+        <div class="cta-band reveal">
+          <h2 class="section-title section-title--left">Find what you are exposed to. Prepare for what is next.</h2>
+          <div class="hero-buttons">
+            <a href="#terminator" class="btn btn-primary">Explore Terminator Sec</a>
+            <a href="#quantumshield" class="btn btn-outline">Explore QuantumShield</a>
+            <a href="#contact" class="btn btn-secure">Talk to us</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="contact">
+      <div class="container">
+        <div class="inquiry-card reveal">
+          <div class="inquiry-grid">
+            <div>
+              <span class="section-tag">Engage</span>
+              <h2 class="section-title">Talk to the security team.</h2>
+              <p class="brief-lead brief-lead--left">Endpoint rollout or cryptographic migration. We reply within four business hours.</p>
+            </div>
+            <div>
+              <form id="consultation-form">
+                <div class="form-group">
+                  <label class="form-label" for="inquiry-service">Interest</label>
+                  <select id="inquiry-service" class="form-select">
+                    <option>Terminator Sec agent trial</option>
+                    <option>QuantumShield migration and proxy</option>
+                    <option>Cryptographic audit and CBOM</option>
+                    <option>CNSA 2.0 advisory</option>
+                    <option>Custom engineering</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="inquiry-name">Name / organization</label>
+                  <input type="text" id="inquiry-name" class="form-input" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="inquiry-email">Work email</label>
+                  <input type="email" id="inquiry-email" class="form-input" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="inquiry-msg">Scope</label>
+                  <textarea id="inquiry-msg" class="form-textarea"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Submit consultation request</button>
+                <div id="form-feedback" style="display: none;"></div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <div class="footer-brand">VELITH</div>
+          <p class="footer-tag">Security software for today's exposure and the cryptographic transition.</p>
+        </div>
+        <div>
+          <h4 class="footer-heading">Products</h4>
+          <ul class="footer-links">
+            <li><a href="#terminator">Terminator Sec</a></li>
+            <li><a href="#quantumshield">QuantumShield</a></li>
+            <li><a href="#simulators">Graph</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="footer-heading">Company</h4>
+          <ul class="footer-links">
+            <li><a href="#products">Products</a></li>
+            <li><a href="#operating">Boundary</a></li>
+            <li><a href="#technology">Topology</a></li>
+            <li><a href="#contact">Talk to us</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© 2026 Velith Systems</span>
+        <span class="mono footer-meta">No telemetry by design</span>
+      </div>
+    </div>
+  </footer>
+  <script src="site.js"></script>
+  <script type="module" src="scene.js?v=node"></script>
+</body>
+</html>

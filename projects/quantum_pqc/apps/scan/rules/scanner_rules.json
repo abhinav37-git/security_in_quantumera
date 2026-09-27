@@ -1,0 +1,103 @@
+{
+  "rules": [
+    {
+      "id": "python-weak-rsa",
+      "language": "python",
+      "severity": "High",
+      "pattern": "(RSA\\.generate|generate_private_key\\(.*?key_size=\\s*(1024|2048))",
+      "algorithm": "RSA",
+      "description": "RSA key size < 3072 bits. Vulnerable to classical factoring and rapid decryption by CRQCs using Shor's algorithm.",
+      "remediation": "Upgrade key size to 3072 or 4096 bits, or migrate to ML-DSA/ML-KEM."
+    },
+    {
+      "id": "python-insecure-hash",
+      "language": "python",
+      "severity": "Medium",
+      "pattern": "hashlib\\.(md5|sha1)\\(",
+      "algorithm": "MD5/SHA-1",
+      "description": "MD5 or SHA-1 hashing algorithm is cryptographically broken.",
+      "remediation": "Use SHA-256, SHA-3, or SLH-DSA for secure signing/hashing."
+    },
+    {
+      "id": "python-weak-cipher",
+      "language": "python",
+      "severity": "High",
+      "pattern": "AES\\.new\\(.*?MODE_ECB",
+      "algorithm": "AES",
+      "description": "AES in ECB mode does not provide message confidentiality across blocks.",
+      "remediation": "Switch to GCM (Galois/Counter Mode) or CBC with secure random IV."
+    },
+    {
+      "id": "js-weak-crypto-api",
+      "language": "javascript",
+      "severity": "High",
+      "pattern": "crypto\\.createDecipheriv?\\(\\s*'(aes-128-ecb|des|rc4)'",
+      "algorithm": "AES/DES/RC4",
+      "description": "Using weak algorithms (DES, RC4) or ECB padding modes.",
+      "remediation": "Migrate to aes-256-gcm or post-quantum alternatives."
+    },
+    {
+      "id": "js-insecure-md5-sha1",
+      "language": "javascript",
+      "severity": "Medium",
+      "pattern": "crypto\\.createHash\\(\\s*'(md5|sha1)'\\)",
+      "algorithm": "MD5/SHA-1",
+      "description": "MD5 and SHA-1 hashes are vulnerable to collision attacks.",
+      "remediation": "Switch to sha256 or sha512."
+    },
+    {
+      "id": "go-weak-rsa",
+      "language": "go",
+      "severity": "High",
+      "pattern": "rsa\\.GenerateKey\\(.*?\\s*(1024|2048)\\s*\\)",
+      "algorithm": "RSA",
+      "description": "RSA key size < 3072 bits generated.",
+      "remediation": "Generate RSA keys with size >= 3072 bits or transition to ML-DSA."
+    },
+    {
+      "id": "go-weak-tls",
+      "language": "go",
+      "severity": "High",
+      "pattern": "tls\\.VersionTLS(10|11)",
+      "algorithm": "TLS",
+      "description": "Explicit TLS 1.0 or TLS 1.1 protocol version selected.",
+      "remediation": "Enforce tls.VersionTLS13 as the minimum TLS version."
+    },
+    {
+      "id": "rust-weak-rsa",
+      "language": "rust",
+      "severity": "High",
+      "pattern": "(Rsa::generate\\(\\s*(1024|2048)\\)|RsaPrivateKey::new\\(.*?\\s*(1024|2048)\\))",
+      "algorithm": "RSA",
+      "description": "Generating short RSA keys (< 3072 bits).",
+      "remediation": "Increase RSA key size to at least 3072 bits."
+    },
+    {
+      "id": "java-weak-cipher",
+      "language": "java",
+      "severity": "High",
+      "pattern": "Cipher\\.getInstance\\(\\s*\"(DES|RC4|AES/ECB)",
+      "algorithm": "DES/RC4/AES",
+      "description": "DES, RC4, or ECB modes are highly insecure.",
+      "remediation": "Upgrade cipher string to AES/GCM/NoPadding or similar."
+    },
+    {
+      "id": "c-weak-openssl",
+      "language": "c_cpp",
+      "severity": "High",
+      "pattern": "(EVP_PKEY_CTX_new_id\\(EVP_PKEY_RSA\\,.*?EVP_PKEY_CTX_set_rsa_keygen_bits\\(.*?\\s*(1024|2048)\\)|RSA_generate_key\\(.*?\\s*(1024|2048)\\,)",
+      "algorithm": "RSA",
+      "description": "Generating classical RSA key size < 3072 bits using OpenSSL.",
+      "remediation": "Use key sizes of 3072+ or integrate ML-KEM via OpenSSL 3.5+."
+    },
+    {
+      "id": "generic-pem-key",
+      "language": "generic",
+      "severity": "Medium",
+      "pattern": "-----BEGIN (RSA|EC|DSA)? PRIVATE KEY-----",
+      "algorithm": "PrivateKeyPEM",
+      "description": "PEM-encoded private key structure detected in source code.",
+      "remediation": "Remove hardcoded cryptographic credentials. Use secret managers."
+    }
+  ]
+}
