@@ -1,0 +1,39 @@
+name: Feature Request
+description: Suggest an idea or enhancement for security_in_quantumera
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting a feature or improvement!
+  - type: dropdown
+    id: component
+    attributes:
+      label: Target Component
+      description: Which subproject would this feature belong to?
+      options:
+        - "quantum_pqc"
+        - "terminator_sec"
+        - "portfolio"
+        - "CI/CD & Developer Experience"
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / Motivation
+      description: Is your feature request related to a problem or a new standard (e.g. NIST PQC update)?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe your proposed implementation or design.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Any alternative solutions or features you considered?

@@ -1,0 +1,55 @@
+name: Bug Report
+description: Create a report to help us improve security_in_quantumera
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected Component
+      description: Which subproject or module does this bug affect?
+      options:
+        - "quantum_pqc / Crypto primitives"
+        - "quantum_pqc / Hybrid Proxy"
+        - "quantum_pqc / CBOM Scanner"
+        - "terminator_sec / Agent & Interceptor"
+        - "terminator_sec / Threat Engine"
+        - "terminator_sec / Dashboard"
+        - "portfolio / Showcase Website"
+        - "Other / Tooling"
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior.
+      placeholder: |
+        1. Go to '...'
+        2. Execute '...'
+        3. See error
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: A clear and concise description of what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment Info
+      description: OS, Go version, Node version, or hardware architecture.
+      placeholder: macOS 15.0 / Go 1.25 / Node 20.x / arm64
