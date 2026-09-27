@@ -2,13 +2,14 @@
 
 A unified monorepo housing cutting-edge cybersecurity, post-quantum cryptography (PQC), defensive endpoint monitoring, and engineer portfolio showcase.
 
+🌐 **Live Portfolio Website**: [https://velithsoftware.vercel.app](https://velithsoftware.vercel.app)
+
 ---
 
 ## 📁 Repository Structure
-
 ```
 security_in_quantumera/
-├── portfolio/                   # Interactive Personal Portfolio & Showcase
+├── portfolio/                   # Interactive Personal Portfolio & Showcase (Live at https://velithsoftware.vercel.app)
 │   ├── index.html
 │   ├── styles.css
 │   ├── site.js
@@ -51,7 +52,8 @@ security_in_quantumera/
   - Low-overhead Bloom filters & Radix trees for fast signature detection.
   - Fleet management and live threat simulation dashboard.
 
-### 3. [Portfolio Showcase](./portfolio)
+### 3. [Portfolio Showcase](./portfolio) — 🌐 [Live Site](https://velithsoftware.vercel.app)
+- **Live URL**: [https://velithsoftware.vercel.app](https://velithsoftware.vercel.app)
 - **Focus**: Interactive web application featuring live security project demos, architecture deep dives, and technical achievements.
 - **Tech Stack**: HTML5, Modern Vanilla CSS, JavaScript, Vercel Serverless.
 
